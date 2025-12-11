@@ -5,7 +5,7 @@ FROM eclipse-temurin:17-jdk-jammy
 WORKDIR /app
 
 # Copy the built jar file into the container
-COPY target/crud-backend-0.0.1-SNAPSHOT.jar app.jar
+COPY target/crud-backend.jar app.jar
 
 # Expose port 8085 (must match server.port)
 EXPOSE 8085
