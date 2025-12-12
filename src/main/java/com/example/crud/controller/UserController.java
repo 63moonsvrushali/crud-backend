@@ -20,14 +20,14 @@ public class UserController {
     @GetMapping
     public String getAllUsers(Model model) {
         model.addAttribute("users", userRepository.findAll());
-        return "users"; // JSP: users.jsp
+        return "users"; // Thymeleaf template: users.html
     }
 
     // Show create form
     @GetMapping("/new")
     public String showCreateForm(Model model) {
         model.addAttribute("user", new User());
-        return "create_user"; // JSP
+        return "create_user"; // Thymeleaf template: create_user.html
     }
 
     // Handle create form
@@ -44,7 +44,7 @@ public class UserController {
                 .orElseThrow(() -> new IllegalArgumentException("Invalid user ID:" + id));
 
         model.addAttribute("user", user);
-        return "edit_user"; // JSP
+        return "edit_user"; // Thymeleaf template: edit_user.html
     }
 
     // Update user
