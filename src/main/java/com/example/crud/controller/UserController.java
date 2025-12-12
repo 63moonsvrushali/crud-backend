@@ -2,14 +2,12 @@ package com.example.crud.controller;
 
 import com.example.crud.model.User;
 import com.example.crud.repository.UserRepository;
-import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
-@CrossOrigin(origins = "http://localhost:4200")  // Allow Angular app on 4200
-@RestController
-@RequestMapping("/api/users")
+@Controller
+@RequestMapping("/users")
 public class UserController {
 
     private final UserRepository userRepository;
@@ -18,43 +16,54 @@ public class UserController {
         this.userRepository = userRepository;
     }
 
-    // Get all users
+    // List all users
     @GetMapping
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    public String getAllUsers(Model model) {
+        model.addAttribute("users", userRepository.findAll());
+        return "users"; // JSP: users.jsp
     }
 
-    // Create a new user
+    // Show create form
+    @GetMapping("/new")
+    public String showCreateForm(Model model) {
+        model.addAttribute("user", new User());
+        return "create_user"; // JSP
+    }
+
+    // Handle create form
     @PostMapping
-    public User createUser(@RequestBody User user) {
-        return userRepository.save(user);
+    public String createUser(@ModelAttribute User user) {
+        userRepository.save(user);
+        return "redirect:/users";
     }
 
-    // Get user by ID
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        return userRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    // Show edit form
+    @GetMapping("/edit/{id}")
+    public String showEditForm(@PathVariable Long id, Model model) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid user ID:" + id));
+
+        model.addAttribute("user", user);
+        return "edit_user"; // JSP
     }
 
     // Update user
-    @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
-        return userRepository.findById(id).map(user -> {
-            user.setName(userDetails.getName());
-            user.setEmail(userDetails.getEmail());
-            User updatedUser = userRepository.save(user);
-            return ResponseEntity.ok(updatedUser);
-        }).orElse(ResponseEntity.notFound().build());
+    @PostMapping("/update/{id}")
+    public String updateUser(@PathVariable Long id, @ModelAttribute User updatedUser) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid user ID:" + id));
+
+        user.setName(updatedUser.getName());
+        user.setEmail(updatedUser.getEmail());
+        userRepository.save(user);
+
+        return "redirect:/users";
     }
 
     // Delete user
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        return userRepository.findById(id).map(user -> {
-            userRepository.delete(user);
-            return ResponseEntity.ok().<Void>build();
-        }).orElse(ResponseEntity.notFound().build());
+    @GetMapping("/delete/{id}")
+    public String deleteUser(@PathVariable Long id) {
+        userRepository.deleteById(id);
+        return "redirect:/users";
     }
 }
