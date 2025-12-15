@@ -1,0 +1,91 @@
+pipeline {
+    agent any
+
+    tools {
+        jdk 'JDK1'
+        maven 'MAVEN_HOME'
+    }
+
+    environment {
+        APP_NAME = 'crud-backend'
+    }
+
+    stages {
+        stage('Clean') {
+            steps {
+                bat 'if exist target rd /s /q target'
+            }
+        }
+
+        stage('Checkout') {
+            steps {
+                git credentialsId: 'github-pat',
+                    branch: 'master',
+                    url: 'https://github.com/63moonsvrushali/crud-backend.git'
+            }
+        }
+        
+        stage('Run Tests') {
+            steps {
+                bat 'mvn clean test'
+            }
+            post {
+                always {
+                    junit 'target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                bat 'mvn clean package -DskipTests'
+                bat 'dir target'
+
+                // Proper Windows-safe rename
+                bat 'for %%f in (target\\*.jar) do ren "%%f" crud-backend.jar'
+
+                bat 'echo AFTER RENAME:'
+                bat 'dir target'
+            }
+        }
+
+        stage('Docker Build (Optional)') {
+            steps {
+                script {
+                    echo "WORKSPACE = ${env.WORKSPACE}"
+                }
+
+                dir("${WORKSPACE}") {
+                    bat 'echo Building Docker image...'
+                    bat 'docker build -t crud-backend:latest .'
+                }
+            }
+        }
+
+        stage('Run Docker Container') {
+            steps {
+                bat '''
+                echo Stopping old container...
+                docker stop crud-backend || echo No running container
+
+                echo Removing old container...
+                docker rm crud-backend || echo No old container
+
+                echo Starting new container...
+                docker run -d -p 8085:8085 --name crud-backend crud-backend:latest
+
+                echo Container started successfully!
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Spring Boot CRUD backend built and deployed using Docker!'
+        }
+        failure {
+            echo 'Build failed!'
+        }
+    }
+}
